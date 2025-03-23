@@ -1,0 +1,14 @@
+{
+  "repository": "https://github.com/anosu/tenkeiparadoxx-translation.git",
+  "license": "MIT",
+  "private": false,
+  "scripts": {
+    "start": "node app.js"
+  },
+  "dependencies": {
+    "@vercel/node": "^4.0.0",
+    "compression": "^1.7.4",
+    "cors": "^2.8.5",
+    "express": "^4.19.2"
+  }
+}

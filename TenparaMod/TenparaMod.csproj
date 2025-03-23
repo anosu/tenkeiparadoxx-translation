@@ -1,0 +1,48 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <AssemblyName>TenparaMod</AssemblyName>
+    <Product>TenparaMod</Product>
+    <Version>1.0.0</Version>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <LangVersion>latest</LangVersion>
+    <RestoreAdditionalProjectSources>
+      https://api.nuget.org/v3/index.json;
+      https://nuget.bepinex.dev/v3/index.json;
+      https://nuget.samboy.dev/v3/index.json
+    </RestoreAdditionalProjectSources>
+    <RootNamespace>TenparaMod</RootNamespace>
+    <BaseOutputPath>E:\Games\DMM GAMES\tenkeiparadox_x\BepInEx\plugins</BaseOutputPath>
+    <ProduceReferenceAssembly>True</ProduceReferenceAssembly>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DebugType>none</DebugType>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <DebugType>none</DebugType>
+  </PropertyGroup>
+
+   <PropertyGroup>
+    <GameDir>E:\Games\DMM GAMES\tenkeiparadox_x</GameDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <GameDlls Include="
+		      $(GameDir)\BepInEx\interop\Assembly-CSharp.dll;
+          $(GameDir)\BepInEx\interop\Paripari*.dll;
+		      $(GameDir)\BepInEx\interop\Il2Cpp*.dll;
+		      $(GameDir)\BepInEx\interop\Unity*.dll">
+    </GameDlls>
+    <Reference Include="@(GameDlls)">
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BepInEx.Unity.IL2CPP" Version="6.0.0-be.*" IncludeAssets="compile" />
+    <PackageReference Include="BepInEx.PluginInfoProps" Version="2.*" />
+  </ItemGroup>
+</Project>
