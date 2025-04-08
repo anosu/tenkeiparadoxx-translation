@@ -6,7 +6,14 @@ namespace TenparaMod
     {
         private void Awake() { }
 
-        private void Update() { }
+        private void Update()
+        {
+            if (Input.GetKeyDown(KeyCode.F5))
+            {
+                Config.Mosaic.Value = !Config.Mosaic.Value;
+                Plugin.Log.LogInfo($"{Config.Mosaic.Definition.Section}.{Config.Mosaic.Definition.Key}: {Config.Mosaic.Value}");
+            }
+        }
 
     }
 }
