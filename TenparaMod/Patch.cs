@@ -64,7 +64,7 @@ namespace TenparaMod
             Task.WaitAll(tasks.ToArray());
         }
 
-        [HarmonyPostfix]
+        [HarmonyPrefix]
         [HarmonyPatch(typeof(ScenarioLifeCycleManager), nameof(ScenarioLifeCycleManager.PrepareScene))]
         public static void LoadTranslationFont(SceneDetail sceneDetail)
         {
@@ -75,6 +75,17 @@ namespace TenparaMod
             episodeId = sceneDetail.Id;
             if (Translation.scenes.ContainsKey(episodeId))
             {
+                foreach (var frameDetail in sceneDetail.SceneFrameDetails)
+                {
+                    if (frameDetail.SpeakerName != null && Translation.names.TryGetValue(frameDetail.SpeakerName, out string name))
+                    {
+                        frameDetail.SpeakerName = name;
+                    }
+                    if (frameDetail.PhraseContents != null && Translation.scenes[episodeId].TryGetValue(frameDetail.PhraseContents, out string phrase))
+                    {
+                        frameDetail.PhraseContents = phrase;
+                    }
+                }
                 Translation.LoadFontAsset();
             }
         }
@@ -98,24 +109,6 @@ namespace TenparaMod
         }
 
         [HarmonyPrefix]
-        [HarmonyPatch(typeof(ScenarioPhrase), nameof(ScenarioPhrase.Prepare))]
-        public static void ReplaceMessageText(SceneFrameDetail frameData)
-        {
-            if (!Config.Translation.Value || !Translation.scenes.ContainsKey(episodeId))
-            {
-                return;
-            }
-            if (frameData.SpeakerName != null && Translation.names.TryGetValue(frameData.SpeakerName, out string name))
-            {
-                frameData.SpeakerName = name;
-            }
-            if (frameData.PhraseContents != null && Translation.scenes[episodeId].TryGetValue(frameData.PhraseContents, out string phrase))
-            {
-                frameData.PhraseContents = phrase;
-            }
-        }
-
-        [HarmonyPrefix]
         [HarmonyPatch(typeof(ScenarioPhrase), nameof(ScenarioPhrase.SetFontMaterial))]
         public static void ReplaceMessageTextFontMaterial(ScenarioPhrase __instance)
         {
@@ -127,6 +120,19 @@ namespace TenparaMod
             __instance.phraseText.font = Translation.fontAsset;
             __instance.fontDefaultMaterial = Translation.fontAsset.material;
             __instance.fontOutlineMaterial = Translation.outlineMaterial;
+        }
+
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(ScenarioLogPanelContent), nameof(ScenarioLogPanelContent.Show))]
+        public static void ReplaceLogFont(ScenarioLogPanelContent __instance)
+        {
+            if (!Config.Translation.Value || !Translation.scenes.ContainsKey(episodeId) || Translation.fontAsset == null)
+            {
+                return;
+            }
+            __instance.speakerNameText.font = Translation.fontAsset;
+            __instance.phraseContentText.font = Translation.fontAsset;
+            __instance.phraseContentText.lineSpacing = -42f;
         }
 
     }
