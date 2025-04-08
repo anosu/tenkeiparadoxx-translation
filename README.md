@@ -14,6 +14,8 @@
 
 配置文件位于BepInEx\config，首次启动后会自动创建
 
+**如需安卓版请移步[DMM-Mod](https://github.com/anosu/DMM-Mod)**
+
 ### 功能
 
 - 去游戏内动态加载的马赛克
