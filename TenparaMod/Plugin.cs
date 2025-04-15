@@ -15,7 +15,11 @@ public class Plugin : BasePlugin
 
     public override void Load()
     {
-        Console.OutputEncoding = Encoding.UTF8;
+        try {
+            Console.OutputEncoding = Encoding.UTF8;
+        } catch (Exception)
+        {
+        }
 
         // Plugin startup logic
         Log = base.Log;

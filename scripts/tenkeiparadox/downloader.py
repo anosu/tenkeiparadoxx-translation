@@ -7,9 +7,13 @@ from serialize import deserialize
 from master import (
     Code,
     deserialize_master,
+    CharacterMaster,
+    EventMaster,
+    LocationMaster,
     LocationNodeMaster,
     EpisodeMaster,
-    CharacterEpisodeMaster
+    CharacterEpisodeMaster,
+    PaidEpisodeMaster
 )
 
 from client import TenkeiparadoxClient
@@ -18,30 +22,44 @@ BASE_URL = 'https://cdne-paripari-prod.tenkei-paradox.com/master-data'
 
 
 class MasterData:
+    Character: dict[int, CharacterMaster]
+    Event: dict[int, EventMaster]
+    Location: dict[int, LocationMaster]
     LocationNode: dict[int, LocationNodeMaster]
     Episode: dict[int, EpisodeMaster]
     CharacterEpisode: dict[int, CharacterEpisodeMaster]
+    PaidEpisode: dict[int, PaidEpisodeMaster]
 
-    def __init__(self, location_node=None, episode=None, character_episode=None):
+    def __init__(self, character, event, location, location_node, episode, character_episode, paid_episode):
+        self.Character = character
+        self.Event = event
+        self.Location = location
         self.LocationNode = location_node
         self.Episode = episode
         self.CharacterEpisode = character_episode
+        self.PaidEpisode = paid_episode
 
 
 class UserData:
     LocationNode: set[int]
     CharacterEpisode: set[int]
+    PaidEpisode: set[int]
 
-    def __init__(self, location_node=None, character_episode=None):
+    def __init__(self, location_node, character_episode, paid_episode):
         self.LocationNode = location_node
         self.CharacterEpisode = character_episode
+        self.PaidEpisode = paid_episode
 
 
 class ScriptDownloader(TenkeiparadoxClient):
+    API_PATH: dict[str, str] = {
+        'LocationNodeMaster': 'Episodes/Quest/{}/getDetails',
+        'CharacterEpisodeMaster': 'Episodes/Character/{}/getDetails',
+        'PaidEpisodeMaster': 'Episodes/{}/getPaidEpisodeDetails',
+    }
+
     user: UserData | None
     master: MasterData | None
-
-    scenes: dict[str, str] | None  # Optional
 
     @staticmethod
     def read_json(file_path: str | Path):
@@ -86,19 +104,21 @@ class ScriptDownloader(TenkeiparadoxClient):
         path, ver = self.get_master()
         data = self.session.get(f'{self.MASTER_BASE_URL}/{path}')
         master, version = deserialize_master(data.content)
-        location_node: LocationNodeMaster
-        episode: EpisodeMaster
-        character_episode: CharacterEpisodeMaster
         self.master = MasterData(
-            location_node={ln.Id: ln for ln in master[Code.LocationNodeMaster]},
+            character={e.Id: e for e in master[Code.CharacterMaster]},
+            event={e.Id: e for e in master[Code.EventMaster]},
+            location={e.Id: e for e in master[Code.LocationMaster]},
+            location_node={e.Id: e for e in master[Code.LocationNodeMaster]},
             episode={e.Id: e for e in master[Code.EpisodeMaster]},
-            character_episode={ce.Id: ce for ce in master[Code.CharacterEpisodeMaster]}
+            character_episode={e.Id: e for e in master[Code.CharacterEpisodeMaster]},
+            paid_episode={e.Id: e for e in master[Code.PaidEpisodeMaster]}
         )
+        episodes = self.master.Episode.values()
         print(f'Total master location nodes: {len(self.master.LocationNode)}')
-        print(f'Total master episodes: {len(self.master.Episode)}')
         print(f'Total master character episodes: {len(self.master.CharacterEpisode)}')
-        print(
-            f'Total scene assets: {sum(len(e.SceneAssetIds + e.AdultSceneAssetIds) for e in self.master.Episode.values())}')
+        print(f'Total master paid episodes: {len(self.master.PaidEpisode)}')
+        print(f'Total master episodes: {len(self.master.Episode)}')
+        print(f'Total scene assets: {sum(len(e.SceneAssetIds + e.AdultSceneAssetIds) for e in episodes)}')
         print('-' * 50)
 
     def init_user(self):
@@ -107,17 +127,21 @@ class ScriptDownloader(TenkeiparadoxClient):
         result = resp.json()['result']
         location_nodes: set[int] = set()
         character_episodes: set[int] = set()
+        paid_episodes: set[int] = set()
         for data in result:
             match data[0]:
                 case 22:
                     location_nodes.add(data[1][1])
                 case 34:
                     character_episodes.add(data[1][1])
+                case 146:
+                    paid_episodes.add(data[1][1])
                 case _:
                     pass
-        self.user = UserData(location_nodes, character_episodes)
+        self.user = UserData(location_nodes, character_episodes, paid_episodes)
         print(f'Total user location nodes: {len(self.user.LocationNode)}')
         print(f'Total user character episodes: {len(self.user.CharacterEpisode)}')
+        print(f'Total user paid episodes: {len(self.user.PaidEpisode)}')
         print('-' * 50)
 
     def download(self, scene_dir: str | Path = 'scenes',
@@ -130,57 +154,65 @@ class ScriptDownloader(TenkeiparadoxClient):
 
         exists = exist_func if exist_func else _exists
 
-        owned_location_nodes = filter(
-            lambda x: x.Id in self.user.LocationNode and x.EpisodeMasterId,
-            self.master.LocationNode.values()
-        )
-        owned_character_episodes = filter(
-            lambda x: x.Id in self.user.CharacterEpisode,
-            self.master.CharacterEpisode.values()
-        )
+        user_ln = self.user.LocationNode
+        user_ce = self.user.CharacterEpisode
+        user_pe = self.user.PaidEpisode
+        master_ln = self.master.LocationNode.values()
+        master_ce = self.master.CharacterEpisode.values()
+        master_pe = self.master.PaidEpisode.values()
 
-        # 尝试读取所有活动和主线剧情
+        # 仅读取用户已有的剧情
         # ------------------------------------
-        # owned_location_nodes = filter(
-        #     lambda x: x.EpisodeMasterId,
-        #     self.master.LocationNode.values()
-        # )
+        owned_ln = filter(lambda x: x.Id in user_ln and x.EpisodeMasterId, master_ln)
+        owned_ce = filter(lambda x: x.Id in user_ce and x.EpisodeMasterId, master_ce)
+        owned_pe = filter(lambda x: x.Id in user_pe and x.EpisodeMasterId, master_pe)
+        # ------------------------------------
+
+        # 尝试读取所有活动、主线和角色剧情
+        # ------------------------------------
+        # owned_ln = filter(lambda x: x.EpisodeMasterId, master_ln)
+        # owned_ce = filter(lambda x: x.EpisodeMasterId, master_ce)
+        # owned_pe = filter(lambda x: x.EpisodeMasterId, master_pe)
         # ------------------------------------
 
         print('Starting download...')
 
-        category = {
-            LocationNodeMaster: 'Quest',
-            CharacterEpisodeMaster: 'Character'
-        }
-
-        data_obj: LocationNodeMaster | CharacterEpisodeMaster
-        for data_obj in chain(owned_location_nodes, owned_character_episodes):
+        data_obj: LocationNodeMaster | CharacterEpisodeMaster | PaidEpisodeMaster
+        for data_obj in chain(owned_ln, owned_ce, owned_pe):
             episode_master = self.master.Episode[data_obj.EpisodeMasterId]
             scene_asset_ids = episode_master.SceneAssetIds + episode_master.AdultSceneAssetIds
-            if all(exists(asset_id) for asset_id in scene_asset_ids):
+            if all(exists(self, asset_id) for asset_id in scene_asset_ids):
                 continue
 
-            episode_type = category[type(data_obj)]
+            episode_type = type(data_obj).__name__
 
-            resp = self.request(
-                'POST',
-                f'Episodes/{episode_type}/{data_obj.Id}/getDetails'
-            ).json()
+            resp = self.request('POST', self.API_PATH[episode_type].format(data_obj.Id)).json()
 
             if errors := resp['errors']:
-                print(f'Error: {errors[0][0]}, {errors[0][1]}')
+                if episode_type == 'CharacterEpisodeMaster':
+                    character = self.master.Character[data_obj.CharacterMasterId]
+                    message = f'Character: {character.AnotherName}{character.Name}'
+                elif episode_type == 'LocationNodeMaster':
+                    location = self.master.Location[data_obj.LocationMasterId]
+                    event = self.master.Event[location.EventMasterId]
+                    message = f'Event: {event.Name} - {location.Name}'
+                else:
+                    episode = self.master.Episode[data_obj.EpisodeMasterId]
+                    message = f'Episode: {episode.EpisodeOrderName} - {episode.Title}'
+                print(f'Error: {errors[0][0]}, {errors[0][1]} {message}')
+                print(data_obj)
                 continue
 
             scene_details: list[tuple[int, str]] = resp['result'][2]
 
             for sid, path in scene_details:
-                if exists(sid): continue
+                if exists(self, sid): continue
                 scene_data = self.session.get(f'{self.MASTER_BASE_URL}/{path}')
                 sid, data = self.parse(deserialize(scene_data.content))
                 self.write_json(scene_dir / f'{sid}.json', data)
                 print(f'Saved => Type: {episode_type}, AssetID: {sid}')
 
+        print('Download complete')
         print('-' * 50)
 
     def generate_names(self, scene_dir: str | Path = 'scenes', path: str | Path = 'names.json'):
@@ -195,6 +227,9 @@ class ScriptDownloader(TenkeiparadoxClient):
                 names[name] = ''
         self.write_json(path, names)
 
+        print('Names generated')
+        print('-' * 50)
+
     def generate_titles(self, path: str | Path = 'titles.json'):
         titles = self.read_json(path)
         for episode in self.master.Episode.values():
@@ -203,8 +238,12 @@ class ScriptDownloader(TenkeiparadoxClient):
             titles[episode.Title] = ''
         self.write_json(path, titles)
 
-        self.write_json('titles.json', [
+        if new_titles := [
             {'message': o}
             for o, t in titles.items()
             if o and not t
-        ])
+        ]:
+            self.write_json('titles.json', new_titles)
+
+        print('Titles generated')
+        print('-' * 50)
