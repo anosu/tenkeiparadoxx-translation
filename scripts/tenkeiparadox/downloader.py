@@ -3,8 +3,8 @@ from pathlib import Path
 from itertools import chain
 from typing import Callable
 
-from serialize import deserialize
-from master import (
+from .serialize import deserialize
+from .master import (
     Code,
     deserialize_master,
     CharacterMaster,
@@ -16,7 +16,7 @@ from master import (
     PaidEpisodeMaster
 )
 
-from client import TenkeiparadoxClient
+from .client import TenkeiparadoxClient
 
 BASE_URL = 'https://cdne-paripari-prod.tenkei-paradox.com/master-data'
 

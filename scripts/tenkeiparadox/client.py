@@ -3,7 +3,7 @@ from typing import Literal
 
 import httpx
 
-from serialize import deserialize_api
+from .serialize import deserialize_api
 
 
 class TenkeiparadoxClient:

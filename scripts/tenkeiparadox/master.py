@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from serialize import deserialize
+from .serialize import deserialize
 
 
 class Code:
