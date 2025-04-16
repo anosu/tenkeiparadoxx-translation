@@ -43,7 +43,7 @@
 
 ### 剧本&脚本
 
-见[scripts/README.md](https://github.com/anosu/tenkeiparadoxx-translation/tree/main/scripts)
+见[scripts/README.md](https://github.com/anosu/tenkeiparadoxx-translation/tree/main/scripts/README.md)
 
 ### 其他
 

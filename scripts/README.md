@@ -5,6 +5,7 @@
 安装依赖
 
 ```shell
+python -m venv .venv
 pip install -r requirements.txt
 ```
 
