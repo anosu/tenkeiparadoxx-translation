@@ -41,6 +41,10 @@
 
 -   当插件初始化完成并且游戏正常启动后（控制台窗口没有出现红色的报错），那么此时应该已经可以正常使用了。插件首次运行之后会在`BepInEx\config`目录下生成 BepInEx 和 mod 本身的配置文件，分别为`BepInEx.cfg`和`TenparaMod.cfg`，如果你需要修改插件的设置（如关闭翻译或者去除马赛克的功能），请修改`TenparaMod.cfg`之后重新启动游戏。如果你需要隐藏控制台窗口，请在`BepInEx.cfg`中找到`[Logging.Console]`选项，并将`Enabled`的值设置为`false`
 
+### 剧本&脚本
+
+见[scripts/README.md](https://github.com/anosu/tenkeiparadoxx-translation/tree/main/scripts)
+
 ### 其他
 
 -   翻译提供者：corvette_tw

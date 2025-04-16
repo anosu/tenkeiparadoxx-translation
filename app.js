@@ -1,3 +1,4 @@
+const fs = require('fs')
 const path = require('path')
 const cors = require('cors')
 const express = require('express')
@@ -22,13 +23,22 @@ Object.entries(routers).forEach(([path, router]) => {
 })
 
 app.all('/', (req, res) => {
-    res.send('TenkeiparadoxX Translation')
+    res.redirect('https://github.com/anosu/tenkeiparadoxx-translation')
 })
 
 Array.from(['names', 'titles', 'scenes']).forEach(cls => {
     app.get(`/translation/${cls}/*`, (req, res) => {
         const filePath = path.join(__dirname, 'translation', `${cls}/${req.params[0]}`)
         res.sendFile(filePath, err => err && res.sendStatus(404))
+    })
+})
+
+app.get('/existed/scenes', (req, res) => {
+    fs.readdir(path.join(__dirname, 'translation', 'scenes'), (err, files) => {
+        if (err) {
+            return res.status(500).send(err.message)
+        }
+        res.send(files)
     })
 })
 

@@ -93,6 +93,11 @@ class ScriptDownloader(TenkeiparadoxClient):
         self.user = None
         self.master = None
 
+        try:
+            self.scenes = self.read_json('scenes.json')
+        except:
+            self.scenes = {}
+
     def login(self, token: str = None):
         if token:
             self.token = token
@@ -206,11 +211,14 @@ class ScriptDownloader(TenkeiparadoxClient):
             scene_details: list[tuple[int, str]] = resp['result'][2]
 
             for sid, path in scene_details:
+                self.scenes[str(sid)] = path
                 if exists(self, sid): continue
                 scene_data = self.session.get(f'{self.MASTER_BASE_URL}/{path}')
                 sid, data = self.parse(deserialize(scene_data.content))
                 self.write_json(scene_dir / f'{sid}.json', data)
                 print(f'Saved => Type: {episode_type}, AssetID: {sid}')
+
+            self.write_json('scenes.json', self.scenes)
 
         print('Download complete')
         print('-' * 50)
@@ -231,7 +239,10 @@ class ScriptDownloader(TenkeiparadoxClient):
         print('-' * 50)
 
     def generate_titles(self, path: str | Path = 'titles.json'):
-        titles = self.read_json(path)
+        try:
+            titles = self.read_json(path)
+        except:
+            titles = {}
         for episode in self.master.Episode.values():
             if episode.Title in titles:
                 continue
@@ -243,7 +254,7 @@ class ScriptDownloader(TenkeiparadoxClient):
             for o, t in titles.items()
             if o and not t
         ]:
-            self.write_json('titles.json', new_titles)
+            self.write_json('titles_gtl.json', new_titles)
 
         print('Titles generated')
         print('-' * 50)
