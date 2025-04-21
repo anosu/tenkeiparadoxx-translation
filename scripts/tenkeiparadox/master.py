@@ -60,6 +60,8 @@ class CharacterMaster:
     DisplayStatusIgnoreExtraLevelBonus: list[int]
     IsNotAvailableHomeCharacterDoubleSetting: bool
     IsCollaboration: bool
+    LimitAwakeningPatternId: int | None
+    UrModelAssetConfigurationJson: str | None
 
 
 @dataclass

@@ -26,7 +26,7 @@ def deserialize(data_list: tuple[ExtType, bytes] | list[list] | bytes) -> list:
 
 
 def deserialize_api(data: bytes):
-    unpacker = msgpack.Unpacker()
+    unpacker = msgpack.Unpacker(strict_map_key=False, timestamp=1)
     unpacker.feed(data)
 
     return {
