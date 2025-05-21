@@ -17,9 +17,8 @@ def deserialize(data_list: tuple[ExtType, bytes] | list[list] | bytes) -> list:
 
     ext: ExtType = data_list[0]
     unpacker.feed(ext.data)
-    decompressed_data = b''.join(
-        lz4.block.decompress(data, size)
-        for size, data in zip(unpacker, data_list[1:])
+    decompressed_data = b"".join(
+        lz4.block.decompress(data, size) for size, data in zip(unpacker, data_list[1:])
     )
     unpacker.feed(decompressed_data)
     return unpacker.unpack()
@@ -31,5 +30,5 @@ def deserialize_api(data: bytes):
 
     return {
         key: deserialize(unpacker.unpack())
-        for key in ['errors', 'result', 'present', 'deleted', 'notifications']
+        for key in ["errors", "result", "present", "deleted", "notifications"]
     }

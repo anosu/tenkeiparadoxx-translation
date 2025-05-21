@@ -39,6 +39,7 @@ def main():
     existed_scenes = set(
         httpx.get("https://tenkeiparadox.ntr.best/existed/scenes").json()
     )
+
     def exists(downloader: ScriptDownloader, asset_id: str | int) -> bool:
         return str(asset_id) in existed_scenes
 

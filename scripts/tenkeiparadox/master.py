@@ -181,7 +181,7 @@ MasterDataType: dict[int, type] = {
     Code.LocationNodeMaster: LocationNodeMaster,
     Code.EpisodeMaster: EpisodeMaster,
     Code.CharacterEpisodeMaster: CharacterEpisodeMaster,
-    Code.PaidEpisodeMaster: PaidEpisodeMaster
+    Code.PaidEpisodeMaster: PaidEpisodeMaster,
 }
 
 
