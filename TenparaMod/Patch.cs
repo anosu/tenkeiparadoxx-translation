@@ -17,11 +17,24 @@ namespace TenparaMod
             Harmony.CreateAndPatchAll(typeof(Patch));
         }
 
-        [HarmonyPrefix]
-        [HarmonyPatch(typeof(SkeletonAnimationController), nameof(SkeletonAnimationController.AddPartsRenderer))]
-        public static bool RemoveMosaic(string name)
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(SkeletonAnimationController), nameof(SkeletonAnimationController.TryAcquireiIndexedKeyword))]
+        public static void RemoveMosaic(string keyword, ref bool __result)
         {
-            return !name.Contains("mosaic");
+            if (keyword == SkeletonAnimationController.pixelationKeyword)
+            {
+                __result = false;
+            }
+        }
+
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(SkeletonAnimationController), nameof(SkeletonAnimationController.TryCompareToIndexedKeyword))]
+        public static void CompareMosaic(string input, ref bool __result)
+        {
+            if (input.Contains(SkeletonAnimationController.pixelationKeyword))
+            {
+                __result = true;
+            }
         }
 
         //[HarmonyPostfix]
