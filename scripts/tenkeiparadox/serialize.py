@@ -3,6 +3,8 @@ import lz4.block
 import msgpack
 from msgpack import ExtType
 
+from .master import MasterDataType
+
 
 def deserialize(data_list: tuple[ExtType, bytes] | list[list] | bytes) -> list:
     if not data_list or len(data_list) == 0:
@@ -32,3 +34,13 @@ def deserialize_api(data: bytes):
         key: deserialize(unpacker.unpack())
         for key in ["errors", "result", "present", "deleted", "notifications"]
     }
+
+
+def deserialize_master(data: bytes) -> tuple[dict[int, list], str]:
+    source, version = deserialize(data)
+    result: dict[int, list] = {}
+    for code, args in source:
+        cls = MasterDataType.get(code)
+        result.setdefault(code, []).append(cls(*args) if cls else args)
+
+    return result, version

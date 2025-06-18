@@ -29,7 +29,7 @@ class TenkeiparadoxClient:
             }
         )
 
-    def get_master(self):
+    def get_master(self) -> tuple[str, str]:
         resp = self.request("GET", "data/master")
         data, ver = resp.json()["result"]
         self.master_version = ver

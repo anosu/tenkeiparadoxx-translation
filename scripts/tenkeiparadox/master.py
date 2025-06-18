@@ -1,7 +1,5 @@
 from dataclasses import dataclass
 
-from .serialize import deserialize
-
 
 class Code:
     CharacterMaster = 4
@@ -183,13 +181,3 @@ MasterDataType: dict[int, type] = {
     Code.CharacterEpisodeMaster: CharacterEpisodeMaster,
     Code.PaidEpisodeMaster: PaidEpisodeMaster,
 }
-
-
-def deserialize_master(data: bytes) -> tuple[dict[int, list], str]:
-    source, version = deserialize(data)
-    result = {}
-    for code, args in source:
-        cls = MasterDataType.get(code)
-        result.setdefault(code, []).append(cls(*args) if cls else args)
-
-    return result, version

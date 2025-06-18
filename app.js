@@ -33,6 +33,14 @@ Array.from(['names', 'titles', 'scenes']).forEach(cls => {
     })
 })
 
+Array.from(['names', 'titles', 'scenes']).forEach(cls => {
+    app.get(`/existed/${cls}`, (req, res) => {
+        const filePath = path.join(__dirname, 'translation', `${cls}/zh_Hans.json`)
+        const translations = JSON.parse(fs.readFileSync(filePath, 'utf8'))
+        res.send(Object.keys(translations))
+    })
+})
+
 app.get('/existed/scenes', (req, res) => {
     fs.readdir(path.join(__dirname, 'translation', 'scenes'), (err, files) => {
         if (err) {

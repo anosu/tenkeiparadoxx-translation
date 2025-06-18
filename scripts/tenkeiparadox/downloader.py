@@ -4,10 +4,9 @@ from itertools import chain
 from typing import Callable
 from dataclasses import dataclass
 
-from .serialize import deserialize
+from .serialize import deserialize, deserialize_master
 from .master import (
     Code,
-    deserialize_master,
     CharacterMaster,
     EventMaster,
     LocationMaster,
@@ -18,8 +17,6 @@ from .master import (
 )
 
 from .client import TenkeiparadoxClient
-
-BASE_URL = "https://cdne-paripari-prod.tenkei-paradox.com/master-data"
 
 
 @dataclass
@@ -65,7 +62,7 @@ class ScriptDownloader(TenkeiparadoxClient):
     def parse(script: list):
         episode_id: str = script[0]
         details: list[list] = script[4]
-        result = []
+        result: list[dict[str, str]] = []
         for frame_detail in details:
             name: str = frame_detail[10]
             message: str = frame_detail[12]
@@ -74,7 +71,7 @@ class ScriptDownloader(TenkeiparadoxClient):
             result.append(
                 {
                     "name": name.replace("%username%", "皇子") if name else "",
-                    "message": message if message else "",
+                    "message": message or "",
                 }
             )
         return episode_id, result
@@ -84,22 +81,13 @@ class ScriptDownloader(TenkeiparadoxClient):
         self.user = None
         self.master = None
 
-        try:
-            self.scenes = self.read_json("scenes.json")
-        except:
-            self.scenes = {}
-
-    def login(self, token: str = None):
-        if token:
-            self.token = token
-        else:
-            super().login()
-
     def init_master(self):
-        print("Requesting master data...")
+        print("Fetching master data...")
+
         path, ver = self.get_master()
-        data = self.session.get(f"{self.MASTER_BASE_URL}/{path}")
-        master, version = deserialize_master(data.content)
+        resp = self.session.get(f"{self.MASTER_BASE_URL}/{path}")
+        resp.raise_for_status()
+        master, version = deserialize_master(resp.content)
         self.master = MasterData(
             {e.Id: e for e in master[Code.CharacterMaster]},
             {e.Id: e for e in master[Code.EventMaster]},
@@ -117,11 +105,14 @@ class ScriptDownloader(TenkeiparadoxClient):
         print(
             f"Total scene assets: {sum(len(e.SceneAssetIds + e.AdultSceneAssetIds) for e in episodes)}"
         )
+
         print("-" * 50)
 
     def init_user(self):
-        print("Requesting user data...")
+        print("Fetching user data...")
+
         resp = self.request("GET", "data/user")
+        resp.raise_for_status()
         result = resp.json()["result"]
         location_nodes: set[int] = set()
         character_episodes: set[int] = set()
@@ -140,6 +131,7 @@ class ScriptDownloader(TenkeiparadoxClient):
         print(f"Total user location nodes: {len(self.user.LocationNode)}")
         print(f"Total user character episodes: {len(self.user.CharacterEpisode)}")
         print(f"Total user paid episodes: {len(self.user.PaidEpisode)}")
+
         print("-" * 50)
 
     def download(
@@ -205,57 +197,60 @@ class ScriptDownloader(TenkeiparadoxClient):
                     episode = self.master.Episode[data_obj.EpisodeMasterId]
                     message = f"Episode: {episode.EpisodeOrderName} - {episode.Title}"
                 print(f"Error: {errors[0][0]}, {errors[0][1]} {message}")
-                print(data_obj)
                 continue
 
             scene_details: list[tuple[int, str]] = resp["result"][2]
 
             for sid, path in scene_details:
-                self.scenes[str(sid)] = path
                 if exists(self, sid):
                     continue
                 scene_data = self.session.get(f"{self.MASTER_BASE_URL}/{path}")
+                scene_data.raise_for_status()
                 sid, data = self.parse(deserialize(scene_data.content))
                 if len(data) == 1 and data[0]["message"] == "仮":
                     continue
                 self.write_json(scene_dir / f"{sid}.json", data)
                 print(f"Saved => Type: {episode_type}, AssetID: {sid}")
 
-            self.write_json("scenes.json", self.scenes)
-
         print("Download complete")
         print("-" * 50)
 
     def generate_names(
-        self, scene_dir: str | Path = "scenes", path: str | Path = "names.json"
+        self,
+        scene_dir: str | Path = "scenes",
+        save_path: str | Path = "names.json",
+        existed_names: dict[str, str] | None = None,
     ):
         if isinstance(scene_dir, str):
             scene_dir = Path(scene_dir)
-        names = self.read_json(path) if Path(path).exists() else {}
-        for file in scene_dir.rglob("*.json"):
-            data = self.read_json(file)
-            for name in set(i.get("name") for i in data):
-                if not name or name in names:
-                    continue
-                names[name] = ""
-        self.write_json(path, names)
+        existed_names = existed_names or {}
 
+        result: dict[str, str] = {
+            name: ""
+            for file in scene_dir.rglob("*.json")
+            for name in set(i.get("name") for i in self.read_json(file))
+            if name and name not in existed_names
+        }
+
+        self.write_json(save_path, result)
         print("Names generated")
+
         print("-" * 50)
 
-    def generate_titles(self, path: str | Path = "titles.json"):
-        try:
-            titles = self.read_json(path)
-        except:
-            titles = {}
-        for episode in self.master.Episode.values():
-            if episode.Title in titles:
-                continue
-            titles[episode.Title] = ""
-        self.write_json(path, titles)
+    def generate_titles(
+        self,
+        save_path: str | Path = "titles_gtl.json",
+        existed_titles: dict[str, str] | None = None,
+    ):
+        existed_titles = existed_titles or {}
 
-        if new_titles := [{"message": o} for o, t in titles.items() if o and not t]:
-            self.write_json("titles_gtl.json", new_titles)
+        result: list[dict[str, str]] = [
+            {"message": episode.Title}
+            for episode in self.master.Episode.values()
+            if episode.Title and episode.Title not in existed_titles
+        ]
 
+        self.write_json(save_path, result)
         print("Titles generated")
+
         print("-" * 50)
