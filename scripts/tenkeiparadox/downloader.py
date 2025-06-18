@@ -39,9 +39,9 @@ class UserData:
 
 class ScriptDownloader(TenkeiparadoxClient):
     API_PATH: dict[str, str] = {
-        "LocationNodeMaster": "Episodes/Quest/{}/getDetails",
-        "CharacterEpisodeMaster": "Episodes/Character/{}/getDetails",
-        "PaidEpisodeMaster": "Episodes/{}/getPaidEpisodeDetails",
+        "LocationNode": "Episodes/Quest/{}/getDetails",
+        "CharacterEpisode": "Episodes/Character/{}/getDetails",
+        "PaidEpisode": "Episodes/{}/getPaidEpisodeDetails",
     }
 
     user: UserData | None
@@ -138,7 +138,11 @@ class ScriptDownloader(TenkeiparadoxClient):
         self,
         scene_dir: str | Path = "scenes",
         exist_func: Callable[["ScriptDownloader", str | int], bool] = None,
+        try_all: bool = False,
     ):
+        if try_all:
+            print("尝试下载所有剧情: 已启用")
+
         if isinstance(scene_dir, str):
             scene_dir = Path(scene_dir)
 
@@ -147,49 +151,60 @@ class ScriptDownloader(TenkeiparadoxClient):
 
         exists = exist_func if exist_func else _exists
 
-        user_ln = self.user.LocationNode
-        user_ce = self.user.CharacterEpisode
-        user_pe = self.user.PaidEpisode
         master_ln = self.master.LocationNode.values()
         master_ce = self.master.CharacterEpisode.values()
         master_pe = self.master.PaidEpisode.values()
 
-        # 仅读取用户已有的剧情
-        # ------------------------------------
-        owned_ln = filter(lambda x: x.Id in user_ln and x.EpisodeMasterId, master_ln)
-        owned_ce = filter(lambda x: x.Id in user_ce and x.EpisodeMasterId, master_ce)
-        owned_pe = filter(lambda x: x.Id in user_pe and x.EpisodeMasterId, master_pe)
-        # ------------------------------------
+        missing_episodes: dict[tuple[str, int], list[int]] = {}
+        user_owned_episodes: list[tuple[str, int]] = []
+        for obj in filter(
+            lambda x: x.EpisodeMasterId, chain(master_ln, master_ce, master_pe)
+        ):
+            episode_master = self.master.Episode[obj.EpisodeMasterId]
+            scene_asset_ids = (
+                episode_master.SceneAssetIds + episode_master.AdultSceneAssetIds
+            )
+            missing_assets = [
+                int(asset_id)
+                for asset_id in scene_asset_ids
+                if not exists(self, asset_id)
+            ]
+            if not missing_assets:
+                continue
 
-        # 尝试读取所有活动、主线和角色剧情
-        # ------------------------------------
-        # owned_ln = filter(lambda x: x.EpisodeMasterId, master_ln)
-        # owned_ce = filter(lambda x: x.EpisodeMasterId, master_ce)
-        # owned_pe = filter(lambda x: x.EpisodeMasterId, master_pe)
-        # ------------------------------------
+            episode_type = type(obj).__name__.replace("Master", "")
+            episode_ientity = (episode_type, obj.Id)
+            missing_episodes[episode_ientity] = missing_assets
+            if obj.Id in getattr(self.user, episode_type):
+                user_owned_episodes.append(episode_ientity)
+
+        print(f"缺失的剧情: {len(missing_episodes)}")
+        for (episode_type, master_id), assets in missing_episodes.items():
+            print(f"Type: {episode_type}, ID: {master_id}, Assets: {assets}")
+        print("-" * 50)
+
+        print(f"用户拥有的剧情: {len(user_owned_episodes)}")
+        for episode_type, master_id in user_owned_episodes:
+            print(f"Type: {episode_type}, ID: {master_id}")
+        print("-" * 50)
 
         print("Starting download...")
 
         data_obj: LocationNodeMaster | CharacterEpisodeMaster | PaidEpisodeMaster
-        for data_obj in chain(owned_ln, owned_ce, owned_pe):
-            episode_master = self.master.Episode[data_obj.EpisodeMasterId]
-            scene_asset_ids = (
-                episode_master.SceneAssetIds + episode_master.AdultSceneAssetIds
-            )
-            if all(exists(self, asset_id) for asset_id in scene_asset_ids):
-                continue
-
-            episode_type = type(data_obj).__name__
+        for episode_type, master_id in (
+            missing_episodes if try_all else user_owned_episodes
+        ):
+            data_obj = getattr(self.master, episode_type)[master_id]
 
             resp = self.request(
                 "POST", self.API_PATH[episode_type].format(data_obj.Id)
             ).json()
 
             if errors := resp["errors"]:
-                if episode_type == "CharacterEpisodeMaster":
+                if episode_type == "CharacterEpisode":
                     character = self.master.Character[data_obj.CharacterMasterId]
                     message = f"Character: {character.AnotherName}{character.Name}"
-                elif episode_type == "LocationNodeMaster":
+                elif episode_type == "LocationNode":
                     location = self.master.Location[data_obj.LocationMasterId]
                     event = self.master.Event[location.EventMasterId]
                     message = f"Event: {event.Name} - {location.Name}"
@@ -232,8 +247,11 @@ class ScriptDownloader(TenkeiparadoxClient):
             if name and name not in existed_names
         }
 
-        self.write_json(save_path, result)
-        print("Names generated")
+        if len(result) == 0:
+            print("No new names found")
+        else:
+            self.write_json(save_path, result)
+            print("Names generated")
 
         print("-" * 50)
 
@@ -250,7 +268,10 @@ class ScriptDownloader(TenkeiparadoxClient):
             if episode.Title and episode.Title not in existed_titles
         ]
 
-        self.write_json(save_path, result)
-        print("Titles generated")
+        if len(result) == 0:
+            print("No new titles found")
+        else:
+            self.write_json(save_path, result)
+            print("Titles generated")
 
         print("-" * 50)

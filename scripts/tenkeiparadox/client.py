@@ -54,6 +54,9 @@ class TenkeiparadoxClient:
         if self.master_version:
             headers["x-masterdata-version"] = self.master_version
         resp = self.session.request(method, url, headers=headers, content=payload)
+        if resp.status_code == 401:
+            raise ValueError("Invalid token")
+
         if msgpack:
             setattr(
                 resp,
