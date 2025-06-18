@@ -32,7 +32,7 @@ def main():
     existed_scenes = get_existed("scenes")
 
     print(
-        f"仓库已有数量: 人名({len(existed_names)}), 作品名({len(existed_titles)}), 场景({len(existed_scenes)})"
+        f"已有翻译数量: 人名({len(existed_names)}), 标题({len(existed_titles)}), 剧本({len(existed_scenes)})"
     )
 
     def exists(downloader: ScriptDownloader, asset_id: str | int) -> bool:

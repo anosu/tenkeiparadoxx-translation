@@ -33,7 +33,7 @@ Array.from(['names', 'titles', 'scenes']).forEach(cls => {
     })
 })
 
-Array.from(['names', 'titles', 'scenes']).forEach(cls => {
+Array.from(['names', 'titles']).forEach(cls => {
     app.get(`/existed/${cls}`, (req, res) => {
         const filePath = path.join(__dirname, 'translation', `${cls}/zh_Hans.json`)
         const translations = JSON.parse(fs.readFileSync(filePath, 'utf8'))
