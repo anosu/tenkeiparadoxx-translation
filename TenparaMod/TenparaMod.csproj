@@ -1,6 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <GameDir>E:\Games\DMM GAMES\tenkeiparadox_x</GameDir>
+    <Authors>Jitsu</Authors>
+  </PropertyGroup>
+
+  <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <AssemblyName>TenparaMod</AssemblyName>
     <Product>TenparaMod</Product>
@@ -13,7 +18,7 @@
       https://nuget.samboy.dev/v3/index.json
     </RestoreAdditionalProjectSources>
     <RootNamespace>TenparaMod</RootNamespace>
-    <BaseOutputPath>E:\Games\DMM GAMES\tenkeiparadox_x\BepInEx\plugins</BaseOutputPath>
+    <BaseOutputPath>$(GameDir)\BepInEx\plugins</BaseOutputPath>
     <ProduceReferenceAssembly>True</ProduceReferenceAssembly>
   </PropertyGroup>
 
@@ -23,11 +28,6 @@
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <DebugType>none</DebugType>
-  </PropertyGroup>
-
-   <PropertyGroup>
-    <GameDir>E:\Games\DMM GAMES\tenkeiparadox_x</GameDir>
-    <Authors>Jitsu</Authors>
   </PropertyGroup>
 
   <ItemGroup>
