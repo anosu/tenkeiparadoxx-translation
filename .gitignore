@@ -44,12 +44,13 @@ decompile
 desktop.ini
 
 # PyCache
-scripts/__pycache__
-scripts/util/__pycache__
-
-/scripts/agent/node_modules
-/scripts/agent/dist
+**/__pycache__
 
 TenparaMod/obj
 .vs
 .venv
+
+# nuitka
+*.dist
+*.build
+*.exe

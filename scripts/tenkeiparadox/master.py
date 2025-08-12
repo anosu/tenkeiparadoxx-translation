@@ -60,6 +60,7 @@ class CharacterMaster:
     IsCollaboration: bool
     LimitAwakeningPatternId: int | None
     UrModelAssetConfigurationJson: str | None
+    ReleaseDate: float | None
 
 
 @dataclass
