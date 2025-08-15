@@ -1,10 +1,10 @@
 ﻿using HarmonyLib;
-using Assets.Paripari.Plugins.Spine;
 using Assets.Paripari.Scripts.UIComponents.Scenario;
 using ParipariApi.Shared.Results;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Text;
+using Assets.Paripari.CustomRendererFeatures.Mosaic;
 
 namespace TenparaMod
 {
@@ -18,23 +18,10 @@ namespace TenparaMod
         }
 
         [HarmonyPostfix]
-        [HarmonyPatch(typeof(SkeletonAnimationController), nameof(SkeletonAnimationController.TryAcquireiIndexedKeyword))]
-        public static void RemoveMosaic(string keyword, ref bool __result)
+        [HarmonyPatch(typeof(MosaicRendererFeature), nameof(MosaicRendererFeature.Create))]
+        public static void RemoveMosaic(MosaicRendererFeature __instance)
         {
-            if (keyword == SkeletonAnimationController.pixelationKeyword)
-            {
-                __result = false;
-            }
-        }
-
-        [HarmonyPostfix]
-        [HarmonyPatch(typeof(SkeletonAnimationController), nameof(SkeletonAnimationController.TryCompareToIndexedKeyword))]
-        public static void CompareMosaic(string input, ref bool __result)
-        {
-            if (input.Contains(SkeletonAnimationController.pixelationKeyword))
-            {
-                __result = true;
-            }
+            __instance.passSettings.Keyword = "114514";
         }
 
         //[HarmonyPostfix]
