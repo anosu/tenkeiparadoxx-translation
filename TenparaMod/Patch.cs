@@ -1,16 +1,18 @@
 ﻿using HarmonyLib;
-using Assets.Paripari.Scripts.UIComponents.Scenario;
-using ParipariApi.Shared.Results;
-using System.Threading.Tasks;
-using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
+using ParipariApi.Shared.Results;
+using System.Collections.Generic;
+using Assets.Paripari.Scripts.UIComponents.Scenario;
 using Assets.Paripari.CustomRendererFeatures.Mosaic;
+using Il2CppSystem;
 
 namespace TenparaMod
 {
     public class Patch
     {
         public static long episodeId;
+        static readonly TimeZoneInfo TZ = TimeZoneInfo.FindSystemTimeZoneByIdWinRTFallback("Tokyo Standard Time");
 
         public static void Initialize()
         {
@@ -18,10 +20,20 @@ namespace TenparaMod
         }
 
         [HarmonyPostfix]
+        [HarmonyPatch(typeof(TimeZoneInfo), nameof(TimeZoneInfo.Local), MethodType.Getter)]
+        public static void SetTimeZoneInfo(ref TimeZoneInfo __result)
+        {
+            __result = TZ;
+        }
+
+        [HarmonyPostfix]
         [HarmonyPatch(typeof(MosaicRendererFeature), nameof(MosaicRendererFeature.Create))]
         public static void RemoveMosaic(MosaicRendererFeature __instance)
         {
-            __instance.passSettings.Keyword = "114514";
+            if (!Config.Mosaic.Value)
+            {
+                __instance.passSettings.Keyword = "114514";
+            }
         }
 
         //[HarmonyPostfix]
