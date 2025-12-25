@@ -61,6 +61,10 @@ namespace TenparaMod
             {
                 return;
             }
+            if (__instance.episodeDetails == null || __instance.episodeDetails.SceneDetails == null)
+            {
+                return;
+            }
             var tasks = new List<Task>();
             StringBuilder sb = new StringBuilder();
             foreach (var detail in __instance.episodeDetails.SceneDetails)
